@@ -1,65 +1,41 @@
 ---
 title: "TD2: Étude de données"
-author: "Nicolas Gast, Arnaud Legrand"
+author: ""
 date: "25 septembre 2015"
 output: html_document
 ---
 
-Le but de ce TD est d'arriver à résumer un jeu de données en choisissant les indicateurs appropriés. Pour cela, on appliquera la démarche de statistiques descriptives vue en cours aux divers jeux de données proposés:
-* Faire une première visualisation des données, sous forme de série temporelle, à différentes échelles.
-* Vérifier l'existance de tendance ou de structure.
-* Si le jeu de donnée (ou une partie de ce jeu de donnée) semble stationnaire: 
-- tracer un histogramme en prenant bien soin de choisir l'échelle qui semble la plus appropriée
-- choisir des indicateurs (ex: mode/variance/médiane)
-* Produire un résumé graphique (ex: boxplot) et écrire une ou deux phrase de commentaire. 
 
-À chaque étape, vous justifierez que ce que vous calculez ou affichez a bien du sens. Le cas échéant, si le jeu de données ne satisfait pas les hypothèses attendues, vous pourrez essayer de vous restreindre à un sous-ensemble du jeu de données en justifiant vos choix.
-
-On rappelle les différentes fonctions de base de R qui pourront vous êtres utiles: `str`, `summary`, `mean`, `diff`, `sort`, `var`, `sd`, `plot`, `plot.ts`, `hist`, `boxplot`.
-
-# Récupération des jeux de données
 ```{r echo=FALSE}
-df_cache1=read.csv("cache1.csv.gz");
-cache1 = df_cache1$Hit.Rate;
-df_cache2=read.csv("cache2.csv.gz");
-cache2 = df_cache2$Hit.Rate;
-df_consumption_UK=read.csv("consumption_UK.csv.gz");
-consumption_UK = df_consumption_UK$Consumption;
-df_google_ping=read.csv("google.csv.gz");
-google_ping = df_google_ping$delay;
-df_stackoverflow_ping=read.csv("stackoverflow.csv.gz");
-stackoverflow_ping = df_stackoverflow_ping$delay;
-### cat access.log.1 access.log | sed -e 's/"GET.*//g' -e 's/ - - \[/,/' -e 's/ .*//' > /tmp/apache.csv
-df_apache=read.csv("apache.csv.gz");
-Sys.setlocale(category = "LC_ALL","C")
-df_apache$Date = as.POSIXct(df_apache$Date, format="%d/%b/%Y:%H:%M:%S")
-apache_date=as.numeric(df_apache$Date)
-
-set.seed(42);
-N=100;
-T_price_trend1 = round(10+.07*(1:N) + rnorm(20,sd=3) + rnorm(N,sd=.5),digit=1);
-T_price_trend2 = atan((1:N)/10)+.2*rnorm(N);
-T_price_trend2[60:64] = 0;
-T_price_trend3 = 2+sin((1:N)/5)*(1+rnorm(N))+.2*rnorm(N);
-T_price_trend4 = 5+atan((1:N)-N/2)+runif(N);
-T_price_trend4[30] = 12
+county = read.csv("Data/county_facts.csv")
+votes = read.csv("Data/votes.csv")
+library(ggplot2)
+library(grid)
+library("gridExtra")
+library(ggplot2)
+library(lattice)
 ```
-
-Vous disposez maintenant des jeux de données suivants: `cache1`, `cache2`, `consumption_UK`, `google_ping`, `stackoverflow_ping`, `apache_date`, `T_price_trend1`, ..., `T_price_trend4`. Amusez-vous bien! 
-
-# Jeu de données synthétiques
+We work on the amrican election. We have that set of data:
 ```{r}
-str(T_price_trend1);
+library(ggplot2)
+interest<-subset(votes,select=c('White','Trump','Romney','Clinton','Obama','Edu_batchelors'))
+head(interest)
+```
+With each line corresponding to an american county.
+Getting usefull result is hard because we work on percentage. To get correlation on for instance white votes, we have to work on counties were there is almost only whites. We saw on that website : http://tempsreel.nouvelobs.com/monde/20161109.OBS0936/les-5-facteurs-cles-qui-expliquent-la-victoire-de-donald-trump.html that white republicans shouldn't vote for trump relating to there university education. So we select only white counties (over 95%) and we plot the difference between the two previous votes for republicans and democrates. That show that the number of white republicans voters grows counter to white democrate vote.
+```{r}
+
+interest=interest[interest$White>0.95, ]
+interest$diffTR = interest$Trump-interest$Romney
+interest$diffCO = interest$Clinton-interest$Obama
+p1=ggplot(data=interest,aes(x=White, y=diffTR))+geom_point(alpha=0.1)+stat_summary(fun.y = "median", colour = "red", size = 2, geom = "point")+ggtitle("White counties republican vote evolution")
+p2=ggplot(data=interest,aes(x=White, y=diffCO))+geom_point(alpha=0.1)+stat_summary(fun.y = "median", colour = "red", size = 2, geom = "point")+ggtitle("White counties democrate vote evolution")
+grid.arrange(p1, p2, ncol=2)
+```
+After we can look at the impact of education:  
+```{r}
+p1<-ggplot(data=interest,aes(x=Edu_batchelors, y=diffTR))+geom_point(alpha=0.1)+ggtitle("White counties democrate vote evolution regarding education")
+p2<-ggplot(data=interest,aes(x=Edu_batchelors, y=diffCO))+geom_point(alpha=0.1)+ggtitle("White counties democrate vote evolution regarding education")
+grid.arrange(p1, p2, ncol=2)
 ```
 
-# Taux de hit dans un cache
-## Premier jeu de données
-## Second jeu de données
-
-# Consommation énergétique de la grande bretagne
-
-# Pings vers un serveur web
-## Google
-## Stackoverflow
-
-# Requêtes dans un serveur Web
